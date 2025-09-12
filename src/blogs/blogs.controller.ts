@@ -15,7 +15,7 @@ export class BlogsController {
   @Get()
    @UseGuards(JwtAuthGuard)
   async findAll(@Req() req) {
-    console.log('Decoded req.user:', req.user);
+    //console.log('Decoded req.user:', req.user);
     return this.blogsService.findAllForUser(req.user);
   }
 
