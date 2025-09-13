@@ -13,7 +13,7 @@ export class BlogsService {
   private async getFirstThreePaidIds(): Promise<string[]> {
     const paid = await this.blogModel
       .find({ paid: true })
-      .sort({ createdAt: 1 }) // earliest published first
+      .sort({ createdAt: 1 }) 
       .limit(3)
       .select('_id')
       .lean();
