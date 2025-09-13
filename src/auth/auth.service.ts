@@ -22,17 +22,6 @@ export class AuthService {
     return result;
   }
 
-  async validateUser(email: string, pass: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) return null;
-    const match = await bcrypt.compare(pass, user.password);
-    if (match) {
-      const { password, ...rest } = user;
-      return rest;
-    }
-    return null;
-  }
-
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -40,9 +29,34 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    const payload = { email: user.email, role: user.role, password: user.password, subscription: user.subscription};
-    return {
-      access_token: this.jwtService.sign(payload),
+    return this.generateJwt(user);
+  }
+
+  async oauthLogin(profile: any) {
+    const email = profile.email;
+    let user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      user = await this.usersService.create({
+  email,
+  password: '',
+  name: profile.displayName || 'No Name',
+  role: 'user',
+  subscription: false,
+});
+
+    }
+
+    return this.generateJwt(user);
+  }
+
+  public generateJwt(user: any) {
+    const payload = {
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+      subscription: user.subscription,
     };
+    return { access_token: this.jwtService.sign(payload) };
   }
 }
