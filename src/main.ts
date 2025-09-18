@@ -8,13 +8,22 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'http://localhost:3001', 
-      'https://next-blog-frontend-xi.vercel.app', 
+      'http://localhost:3001',
+      'https://next-blog-frontend-xi.vercel.app',
     ],
     credentials: true,
+
   });
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+  }),
+);
+
 
   await app.listen(port);
 }

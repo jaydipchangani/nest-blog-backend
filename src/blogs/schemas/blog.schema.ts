@@ -22,6 +22,13 @@ export class Blog {
 
   @Prop({ default: 0 })
   views?: number;
+
+  @Prop({ type: Buffer }) 
+  image?: Buffer;
+
+  @Prop()
+  imageType?: string;
+
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);
