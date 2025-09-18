@@ -35,14 +35,27 @@ async create(dto: any, authorId: string, file?: Express.Multer.File) {
   async findAllForUser(user?: Partial<UserDocument>) {
   const blogs = await this.blogModel.find().sort({ createdAt: -1 }).lean();
 
-  return blogs.map(blog => {
-    return {
+  // Get first three paid blog IDs
+  const firstThreePaidIds = await this.getFirstThreePaidIds();
+
+  return blogs
+    .filter(blog => {
+      // free blogs are always visible
+      if (!blog.paid) return true;
+
+      // paid blogs: if user has subscription, show all
+      if (user && user.subscription) return true;
+
+      // non-subscribed user: only show first 3 paid blogs
+      return firstThreePaidIds.includes(blog._id.toString());
+    })
+    .map(blog => ({
       ...blog,
       imageBase64: blog.image
         ? `data:${blog.imageType};base64,${blog.image.toString('base64')}`
         : null,
-    };
-  });
+    }));
+
 }
 
 
