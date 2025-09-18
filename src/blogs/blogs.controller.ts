@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Req, UseGuards, UploadedFile, UseInterceptors ,BadRequestException,UsePipes, ValidationPipe} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Req, UseGuards, UploadedFile, UseInterceptors ,Res} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -7,8 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Role } from '../common/enums/roles.enum';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+import type { Response } from 'express';
 
 @Controller('blogs')
 export class BlogsController {
@@ -61,4 +60,17 @@ async update(
   async remove(@Param('id') id: string) {
     return this.blogsService.remove(id);
   }
+
+  @Get(':id/image')
+async getImage(@Param('id') id: string, @Res() res: Response) {
+  const blog = await this.blogsService.findById(id);
+
+  if (!blog || !blog.image) {
+    return res.status(404).send('Image not found');
+  }
+
+  res.setHeader('Content-Type', blog.imageType || 'image/png');
+  res.send(blog.image);
+}
+
 }

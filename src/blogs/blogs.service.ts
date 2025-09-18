@@ -47,36 +47,29 @@ async create(dto: any, authorId: string, file?: Express.Multer.File) {
 
 
 
-  async findOneForUser(id: string, user?: Partial<UserDocument>) {
-  const blog = await this.blogModel.findById(id).lean(); 
+async findOneForUser(id: string, user?: Partial<UserDocument>) {
+  const blog = await this.blogModel.findById(id).exec();
   if (!blog) throw new NotFoundException('Blog not found');
 
-  if (!blog.paid) {
+  const formatBlog = (blogDoc: BlogDocument) => {
     return {
-      ...blog,
-      imageBase64: blog.image
-        ? `data:${blog.imageType};base64,${blog.image.toString('base64')}`
+      ...blogDoc.toObject(),
+      imageBase64: blogDoc.image
+        ? `data:${blogDoc.imageType};base64,${blogDoc.image.toString('base64')}`
         : null,
     };
-  }
+  };
 
-  if (user && user.subscription) {
-    return {
-      ...blog,
-      imageBase64: blog.image
-        ? `data:${blog.imageType};base64,${blog.image.toString('base64')}`
-        : null,
-    };
-  }
+  if (!blog.paid) return formatBlog(blog);
+
+  if (user && user.subscription) return formatBlog(blog);
 
   const firstThreePaidIds = await this.getFirstThreePaidIds();
-  if (firstThreePaidIds.includes(blog._id.toString())) {
-    return {
-      ...blog,
-      imageBase64: blog.image
-        ? `data:${blog.imageType};base64,${blog.image.toString('base64')}`
-        : null,
-    };
+
+  const blogIdStr = (blog._id as unknown as Types.ObjectId).toString();
+
+  if (firstThreePaidIds.includes(blogIdStr)) {
+    return formatBlog(blog);
   }
 
   throw new ForbiddenException('This blog is only for subscribers');
@@ -102,4 +95,20 @@ async create(dto: any, authorId: string, file?: Express.Multer.File) {
     const res = await this.blogModel.findByIdAndDelete(id);
     if (!res) throw new NotFoundException('Blog not found');
   }
+
+  async findById(id: string) {
+  const blog = await this.blogModel.findById(id).lean();
+  if (!blog) throw new NotFoundException('Blog not found');
+
+  return {
+    ...blog,
+    imageBase64: blog.image
+      ? `data:${blog.imageType};base64,${blog.image.toString('base64')}`
+      : null,
+  };
 }
+
+
+}
+
+
