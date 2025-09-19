@@ -32,22 +32,32 @@ async create(dto: any, authorId: string, file?: Express.Multer.File) {
   return created.save();
 }
 
-  async findAllForUser(user?: Partial<UserDocument>) {
-  const blogs = await this.blogModel.find().sort({ createdAt: -1 }).lean();
-
+async findAllForUser(
+  user?: Partial<UserDocument>,
+  search?: string,
+  sortBy: string = 'createdAt',
+  sortOrder: 'asc' | 'desc' = 'desc',
+  page: number = 1,
+  limit: number = 10,
+) {
   // Get first three paid blog IDs
   const firstThreePaidIds = await this.getFirstThreePaidIds();
 
-  return blogs
+  const query: any = {};
+
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  let blogs = await this.blogModel.find(query).sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }).lean();
+
+  blogs = blogs
     .filter(blog => {
-      // free blogs are always visible
-      if (!blog.paid) return true;
-
-      // paid blogs: if user has subscription, show all
-      if (user && user.subscription) return true;
-
-      // non-subscribed user: only show first 3 paid blogs
-      return firstThreePaidIds.includes(blog._id.toString());
+      if (!blog.paid) return true; 
+      if (user && user.subscription) return true; 
+      return firstThreePaidIds.includes(blog._id.toString()); 
     })
     .map(blog => ({
       ...blog,
@@ -56,8 +66,16 @@ async create(dto: any, authorId: string, file?: Express.Multer.File) {
         : null,
     }));
 
-}
+  const total = blogs.length;
+  const paginatedBlogs = blogs.slice((page - 1) * limit, page * limit);
 
+  return {
+    data: paginatedBlogs,
+    total,
+    page,
+    lastPage: Math.ceil(total / limit),
+  };
+}
 
 
 async findOneForUser(id: string, user?: Partial<UserDocument>) {

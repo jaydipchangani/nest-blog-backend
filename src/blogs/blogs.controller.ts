@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Req, UseGuards, UploadedFile, UseInterceptors ,Res} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Req, UseGuards, UploadedFile, UseInterceptors ,Res, Query} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -15,10 +15,23 @@ export class BlogsController {
 
   // Public / User
   @Get()
-   @UseGuards(JwtAuthGuard)
-  async findAll(@Req() req) {
-    //console.log('Decoded req.user:', req.user);
-    return this.blogsService.findAllForUser(req.user);
+  @UseGuards(JwtAuthGuard)
+  async findAll(
+    @Req() req,
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy: string = 'createdAt',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.blogsService.findAllForUser(
+      req.user,
+      search,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    );
   }
 
   @Get(':id')
